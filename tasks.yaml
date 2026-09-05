@@ -1,1 +1,40 @@
-
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: npminstall
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: npm-install
+      image: node:16-alpine
+      workingDir: $(workspaces.source.path)
+      command: ["npm", "install"]
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: tests
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: run-tests
+      image: node:16-alpine
+      workingDir: $(workspaces.source.path)
+      command: ["npx", "jasmine"]
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: build-image
+      image: quay.io/buildah/stable:v1.15.0
+      workingDir: $(workspaces.source.path)
+      securityContext:
+        privileged: true
+      command: ["buildah", "bud", "--tls-verify=false", "--format=docker", "-t", "tax-calculator", "."]
